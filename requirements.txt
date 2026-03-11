@@ -9,3 +9,10 @@ marshmallow==3.20.1 # <- Nueva herramienta de validación
 Flask-Marshmallow==0.15.0 # <- Su integración con Flask
 marshmallow-sqlalchemy==0.29.0 # <- Su integración con SQLAlchemy
 flask-cors==4.0.0 # <- Permite que un frontend hable con nuestro backend
+streamlit==1.39.0
+requests==2.32.3
+pandas==2.2.3
+plotly==5.24.1
+langgraph==0.2.32
+langchain==0.3.4
+langchain-openai==0.2.3
