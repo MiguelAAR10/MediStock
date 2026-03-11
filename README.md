@@ -87,3 +87,60 @@ Un taller bien organizado es la clave para un proyecto mantenible.
 *   **Reconstrucción de Identidad:** Se implementó un sistema de "mapa de la verdad" para rellenar DNI y nombres de pacientes faltantes, maximizando la retención de datos.
 *   **Inferencia de Contexto en 'Deuda':** Se utiliza una expresión regular con `negative lookbehind` (o una estrategia de dos pasos) para diferenciar entre la creación de una deuda y el pago de una deuda existente.
 *   **Extracción de Características de 'Notas':** Se aplican `regex` para extraer datos estructurados (Unidades, Jeringas, etc.) de la columna de texto libre `notas`.
+
+---
+
+## 🏗️ 7. Arquitectura OLTP + OLAP + Agentes
+
+### OLAP en PostgreSQL
+
+Se añadió un esquema analítico en PostgreSQL bajo `olap`:
+
+- `src/sql/olap/001_create_olap_schema.sql`: dimensiones, hechos e `ai_insights`.
+- `src/sql/olap/002_refresh_olap.sql`: función `olap.refresh_olap_full()` para refresco completo.
+
+Tablas clave:
+
+- Dimensiones: `dim_fecha`, `dim_paciente`, `dim_servicio`, `dim_producto`, `dim_medio_pago`.
+- Hechos: `fact_ventas`, `fact_servicios`, `fact_consumo_productos`.
+- Insights automáticos: `ai_insights`.
+
+### Agentes multi-nodo (LangGraph)
+
+Nodos activos en backend:
+
+- `analytics`: KPIs, tendencias y segmentación.
+- `process`: operación e inventario.
+- `reception`: consultas de atención.
+- `curation`: calidad y limpieza de datos antes de OLTP.
+
+Archivos principales:
+
+- `src/clinica_backend/app/agents/graph.py`
+- `src/clinica_backend/app/agents/nodes.py`
+- `src/clinica_backend/app/agents/memory.py`
+- `src/clinica_backend/app/routes/agentes.py`
+
+### Curación previa a OLTP
+
+La API ahora pasa por un servicio de curación para altas/actualizaciones:
+
+- `src/clinica_backend/app/services/data_curation_service.py`
+- `src/clinica_backend/app/routes/curation.py`
+
+Endpoints:
+
+- `POST /api/v1/curation/paciente-preview`
+- `POST /api/v1/curation/consulta-preview`
+- `GET /api/v1/curation/quality`
+
+### Automatización con cron
+
+Se incluye ciclo automático de refresco OLAP + captura de insights:
+
+- Script: `src/jobs/run_olap_cycle.py`
+- Cron template: `ops/cron/clinica_prime.cron`
+
+También disponible endpoint manual:
+
+- `POST /api/v1/olap/run-cycle`
