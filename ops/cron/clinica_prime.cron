@@ -1,0 +1,5 @@
+# Ejecuta ciclo OLAP + insights cada hora
+0 * * * * cd /mnt/c/DataScience/Projects_Python/Clinica_Prime && /usr/bin/python3 src/jobs/run_olap_cycle.py >> /mnt/c/DataScience/Projects_Python/Clinica_Prime/ops/cron/olap_cycle.log 2>&1
+
+# Limpieza nocturna opcional: solo insight de curacion a las 02:15
+15 2 * * * cd /mnt/c/DataScience/Projects_Python/Clinica_Prime && /usr/bin/python3 src/jobs/run_olap_cycle.py >> /mnt/c/DataScience/Projects_Python/Clinica_Prime/ops/cron/olap_cycle.log 2>&1
