@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: medistock_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medistock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-medistock}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - medistock_pgdata:/var/lib/postgresql/data
+      - ./src/sql/schema:/docker-entrypoint-initdb.d/schema:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medistock}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: ops/docker/backend.Dockerfile
+    container_name: medistock_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+    ports:
+      - "${API_PORT:-5000}:5000"
+    volumes:
+      - .:/app
+    command: python src/clinica_backend/run.py
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ops/docker/frontend.Dockerfile
+    container_name: medistock_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file: .env
+    ports:
+      - "${STREAMLIT_SERVER_PORT:-8501}:8501"
+    volumes:
+      - ./src/clinica_frontend:/app/src/clinica_frontend
+    command: streamlit run src/clinica_frontend/app.py --server.port=8501 --server.address=0.0.0.0
+
+  olap-refresh:
+    build:
+      context: .
+      dockerfile: ops/docker/backend.Dockerfile
+    container_name: medistock_olap_refresh
+    depends_on:
+      - postgres
+    env_file: .env
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        python src/jobs/setup_olap.py &&
+        while true; do
+          python src/jobs/run_olap_cycle.py;
+          sleep 86400;
+        done
+      "
+    restart: unless-stopped
+
+volumes:
+  medistock_pgdata:
+    driver: local
