@@ -1,131 +1,146 @@
-# MediStock Core: Clinical Data Pipeline & ERP
+# 🏛️ Proyecto ETL: Clínica Prime
 
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-2.0-000000?style=for-the-badge&logo=flask&logoColor=white)
-![Pandas](https://img.shields.io/badge/Pandas-Data%20Ops-150458?style=for-the-badge&logo=pandas&logoColor=white)
-![Status](https://img.shields.io/badge/Status-Active%20Development-success?style=for-the-badge)
+**Versión 1.0.0**
 
-## 🎯 Executive Summary
+## 🎯 1. Resumen Ejecutivo 
 
-**MediStock Core** is a robust **ETL (Extract, Transform, Load)** pipeline and backend system designed to modernize legacy healthcare operations. 
-
-The project addresses a critical business problem: transforming unstructured, inconsistent historical data (Excel spreadsheets) into a normalized, ACID-compliant **PostgreSQL Data Warehouse**. This system serves as the foundation for real-time inventory tracking, patient management, and business intelligence analytics.
+Este proyecto implementa un pipeline de ETL (Extract, Transform, Load) robusto y modular, construido en Python con la librería Pandas. Su misión es ingerir, limpiar, transformar y consolidar los registros históricos de pacientes y consultas de la Clínica Prime, que actualmente residen en un archivo Excel multi-hoja con una estructura inconsistente y datos de baja calidad. El destino final de los datos limpios es una base de datos PostgreSQL relacional, sentando las bases para futuras iniciativas de Business Intelligence y análisis de negocio.
 
 ---
 
-## 🗺️ Architecture Overview
+## 🗺️ 2. Arquitectura del Pipeline
 
-The system follows a modular architecture where data cleaning logic is decoupled from the ingestion layer. It utilizes a **"Taller" pattern** (utility workshop) to handle complex data transformation before loading it into the transactional database.
+El pipeline sigue una arquitectura ETL (Extract-Transform-Load) modular, donde la lógica de limpieza y transformación se encapsula en un taller de herramientas reutilizables (`limpieza_utils.py`) y es orquestada desde un notebook principal (`main.ipynb`).
 
 ```mermaid
 graph TD;
-    A[📄 Raw Legacy Excel Data] -->|1. Ingestion| B(Pandas Staging Engine);
-    B -->|2. Transformation Pipeline| C{Data Cleaning Logic};
-    C -->|Schema Standardization| D[Strict Type Enforcement];
-    C -->|Heuristics| E[Identity Reconstruction Map];
-    C -->|NLP / Regex| F[Feature Extraction from Notes];
-    F --> G[✅ Cleaned & Consolidated Data];
-    G -->|3. Transactional Load| H[(PostgreSQL Warehouse)];
-    H <-->|4. API Layer| I[Flask Backend API];
+    A[📄 Excel Crudo Múltiples Hojas] -->|1. Extracción| B 🐼 DataFrame Maestro en Pandas;
+    B -->|2. Transformación en Cascada| C{⚙️ Pipeline de Limpieza};
+    C -->|Lógica A| D[🔧 Estandarización de Esquema];
+    C -->|Lógica B| E[🔧 Cirugía de Tipos de Datos];
+    C -->|Lógica C| F[🔧 Reconstrucción de Identidades];
+    C -->|Lógica D| G[🔧 Extracción de Características Notas];
+    G --> H[📊 DataFrame Limpio y Consolidado];
+    H -->|3. Carga| I🐘 Base de Datos PostgreSQL;
 ```
 
 ---
 
-## 🛠️ Tech Stack & Engineering Decisions
+## 🛠️ 3. Stack Tecnológico
 
-| Component | Technology | Reasoning |
-| :--- | :--- | :--- |
-| **Language** | Python 3.10+ | Robust ecosystem for Data Engineering and Backend logic. |
-| **ETL Engine** | Pandas / NumPy | Vectorized operations for high-speed data manipulation. |
-| **Database** | PostgreSQL | Chosen for strict relational integrity, JSONB support, and advanced indexing capabilities. |
-| **ORM** | SQLAlchemy | To manage database abstraction and secure transaction handling. |
-| **Backend** | Flask | Lightweight framework for creating modular RESTful API endpoints. |
+*   **Lenguaje Principal:** Python 3.10+
+*   **Análisis y Manipulación de Datos:** Pandas
+*   **Conectividad de Base de Datos:** SQLAlchemy, Psycopg2
+*   **Base de Datos de Destino:** PostgreSQL
+*   **Entorno de Desarrollo:** Jupyter Notebooks, Visual Studio Code
 
 ---
 
-## 🧠 Core Business Logic & Algorithms
+## 📂 4. Estructura del Proyecto
 
-This project goes beyond simple data copying. It implements complex algorithms to recover and sanitize lost data:
+Un taller bien organizado es la clave para un proyecto mantenible.
 
-### 1. Heuristic Identity Reconstruction
-Legacy data often contains missing patient IDs. I implemented a **"Truth Mapping" algorithm** that correlates fuzzy name matches with historical records to backfill missing DNIs (National IDs), maximizing data retention rates.
-
-### 2. Context-Aware Transaction Inference
-Distinguishing between a "New Debt" and a "Payment" in unstructured text is difficult. The system uses **Negative Lookbehind Regex** to infer the financial context of a transaction based on unstructured operator notes.
-
-### 3. Feature Extraction via Regex
-Medical supplies (e.g., "Botox 50u", "Syringes 3ml") were buried in free-text fields. I built a **Regex Extraction Engine** to parse these strings into structured inventory items, enabling precise stock tracking.
-
----
-
-## 📂 Project Structure
-
-```bash
+```
 /clinica-prime-etl-pipeline
 │
-├── data/                  # Raw sensitive data (GitIgnored for security)
+├── data/
+│   └── 📄 (Archivos de datos brutos y sensibles - IGNORADO POR GIT)
+│
 ├── notebooks/
-│   └── main.ipynb         # Orchestration: The command center for the ETL process
+│   └── 📓 main.ipynb         # Puesto de Mando: Orquesta el pipeline completo.
+│
 ├── src/
-│   ├── app/               # Flask Application Source
-│   │   ├── models/        # SQLAlchemy ORM Models (Schema definition)
-│   │   ├── routes/        # API Endpoints
-│   │   └── utils/         # Helper functions
-│   └── limpieza_utils.py  # The Toolkit: Advanced data cleaning functions
-├── sql/                   # Raw SQL Scripts for complex queries and migrations
-├── output/                # Cleaned datasets ready for BI tools
-└── requirements.txt       # Dependency management
+│   └── 🐍 limpieza_utils.py  # La Armería: Contiene todas las funciones de limpieza.
+│
+├── output/
+│   └── 📈 (Resultados, CSVs limpios, gráficos - IGNORADO POR GIT)
+│
+├── .gitignore               # El Manto de Invisibilidad
+└── README.md                # El Alma del Proyecto (este archivo)
 ```
 
 ---
 
-## 🚀 How to Run
+## 🚀 5. Instrucciones de Ejecución
 
-### Prerequisites
-
-* Python 3.10 or higher
-* PostgreSQL installed locally or via Docker
-
-### Installation
-
-1.  **Clone the repository:**
+1.  **Clonar el repositorio:**
     ```bash
-    git clone https://github.com/MiguelAAR10/clinica-prime-etl-pipeline.git
+    git clone git@github.com:TuUsuario/clinica-prime-etl-pipeline.git
     cd clinica-prime-etl-pipeline
     ```
-
-2.  **Set up Virtual Environment:**
+2.  **Crear y activar un entorno virtual:**
     ```bash
     python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    source venv/bin/activate  # En Windows: venv\Scripts\activate
     ```
-
-3.  **Install Dependencies:**
+3.  **Instalar las dependencias:**
     ```bash
-    pip install -r requirements.txt
+    pip install pandas numpy sqlalchemy psycopg2-binary openpyxl
     ```
-
-4.  **Configuration:**
-    Create a `.env` file based on your Postgres credentials. Place raw `.xlsx` files in the `data/` directory.
-
-5.  **Execute Pipeline:**
-    Run the Jupyter Notebook in `notebooks/main.ipynb` to trigger the ETL process.
+4.  **Configurar los Datos:** Colocar el archivo `clientes_work.xlsx` dentro de la carpeta `data/`.
+5.  **Ejecutar el Pipeline:** Abrir `notebooks/main.ipynb` y ejecutar las celdas en orden.
 
 ---
 
-## 🔮 Roadmap & Future Improvements
+## 🧠 6. Lógica de Negocio y Decisiones de Limpieza Clave
 
-* [ ] **Dockerization:** Containerize the entire application (API + DB) using Docker Compose.
-* [ ] **CI/CD:** Implement GitHub Actions for automated testing.
-* [ ] **Frontend:** Build a Streamlit Dashboard for real-time inventory visualization.
-* [ ] **AI Integration:** Implement an LLM Agent (RAG) to query the database using natural language.
+*   **Reconstrucción de Identidad:** Se implementó un sistema de "mapa de la verdad" para rellenar DNI y nombres de pacientes faltantes, maximizando la retención de datos.
+*   **Inferencia de Contexto en 'Deuda':** Se utiliza una expresión regular con `negative lookbehind` (o una estrategia de dos pasos) para diferenciar entre la creación de una deuda y el pago de una deuda existente.
+*   **Extracción de Características de 'Notas':** Se aplican `regex` para extraer datos estructurados (Unidades, Jeringas, etc.) de la columna de texto libre `notas`.
 
 ---
 
+## 🏗️ 7. Arquitectura OLTP + OLAP + Agentes
 
+### OLAP en PostgreSQL
 
-**Miguel Arias**
-*Industrial Engineer | Data & Software Operations*
-[LinkedIn](https://www.linkedin.com/in/tu-usuario) | [Portfolio](https://github.com/MiguelAAR10)
-```
+Se añadió un esquema analítico en PostgreSQL bajo `olap`:
+
+- `src/sql/olap/001_create_olap_schema.sql`: dimensiones, hechos e `ai_insights`.
+- `src/sql/olap/002_refresh_olap.sql`: función `olap.refresh_olap_full()` para refresco completo.
+
+Tablas clave:
+
+- Dimensiones: `dim_fecha`, `dim_paciente`, `dim_servicio`, `dim_producto`, `dim_medio_pago`.
+- Hechos: `fact_ventas`, `fact_servicios`, `fact_consumo_productos`.
+- Insights automáticos: `ai_insights`.
+
+### Agentes multi-nodo (LangGraph)
+
+Nodos activos en backend:
+
+- `analytics`: KPIs, tendencias y segmentación.
+- `process`: operación e inventario.
+- `reception`: consultas de atención.
+- `curation`: calidad y limpieza de datos antes de OLTP.
+
+Archivos principales:
+
+- `src/clinica_backend/app/agents/graph.py`
+- `src/clinica_backend/app/agents/nodes.py`
+- `src/clinica_backend/app/agents/memory.py`
+- `src/clinica_backend/app/routes/agentes.py`
+
+### Curación previa a OLTP
+
+La API ahora pasa por un servicio de curación para altas/actualizaciones:
+
+- `src/clinica_backend/app/services/data_curation_service.py`
+- `src/clinica_backend/app/routes/curation.py`
+
+Endpoints:
+
+- `POST /api/v1/curation/paciente-preview`
+- `POST /api/v1/curation/consulta-preview`
+- `GET /api/v1/curation/quality`
+
+### Automatización con cron
+
+Se incluye ciclo automático de refresco OLAP + captura de insights:
+
+- Script: `src/jobs/run_olap_cycle.py`
+- Cron template: `ops/cron/clinica_prime.cron`
+
+También disponible endpoint manual:
+
+- `POST /api/v1/olap/run-cycle`
