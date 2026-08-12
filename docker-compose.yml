@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -15,10 +13,10 @@ services:
       - medistock_pgdata:/var/lib/postgresql/data
       - ./src/sql/schema:/docker-entrypoint-initdb.d/schema:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medistock}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medistock} -d ${POSTGRES_DB:-medistock}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
     build:
@@ -29,7 +27,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medistock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-medistock}
+      FLASK_ENV: ${FLASK_ENV:-development}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      API_HOST: 0.0.0.0
+      API_PORT: "5000"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
       - "${API_PORT:-5000}:5000"
     volumes:
@@ -43,8 +53,15 @@ services:
     container_name: medistock_frontend
     restart: unless-stopped
     depends_on:
-      - backend
-    env_file: .env
+      backend:
+        condition: service_started
+    environment:
+      API_BASE_URL: http://backend:5000/api/v1
+      REQUEST_TIMEOUT: "10"
+      DEBUG_MODE: "false"
+      PAGE_TITLE: MediStock
+      PAGE_ICON: ":hospital:"
+      LAYOUT: wide
     ports:
       - "${STREAMLIT_SERVER_PORT:-8501}:8501"
     volumes:
@@ -57,15 +74,23 @@ services:
       dockerfile: ops/docker/backend.Dockerfile
     container_name: medistock_olap_refresh
     depends_on:
-      - postgres
-    env_file: .env
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-medistock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-medistock}
     volumes:
       - .:/app
     command: >
       sh -c "
+        echo 'Initial OLAP bootstrap...' &&
         python src/jobs/setup_olap.py &&
+        echo 'Starting OLAP refresh loop (24h cycle)...' &&
         while true; do
-          python src/jobs/run_olap_cycle.py;
+          python src/jobs/run_olap_cycle.py || echo 'OLAP cycle failed, will retry';
           sleep 86400;
         done
       "
